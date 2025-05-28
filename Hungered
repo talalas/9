@@ -1,15 +1,20 @@
 local entityModel = true
+local room = game.ReplicatedStorage.GameData.LatestRoom.Value
+local currentRoom = workspace.CurrentRooms[room]
 
-if game.Workspace:FindFirstChild("SeekMovingNewClone")
-or game.ReplicatedStorage.GameData.LatestRoom.Value == 50
-or game.ReplicatedStorage.GameData.LatestRoom.Value == 51
-or game.ReplicatedStorage.GameData.LatestRoom.Value == 52
-or workspace.CurrentRooms[game.ReplicatedStorage.GameData.LatestRoom.Value].Assets:FindFirstChild("ShopProps")
-or game.ReplicatedStorage.GameData.LatestRoom.Value >= 90 then
+-- Kiểm tra các điều kiện để KHÔNG spawn entity
+local isSeekActive = game.Workspace:FindFirstChild("SeekMovingNewClone") ~= nil
+local isShopRoom = currentRoom and currentRoom:FindFirstChild("Assets") and currentRoom.Assets:FindFirstChild("ShopProps") ~= nil
+local isSpecialRoom = room == 50 or room == 51 or room == 52
+local isNearEnd = room >= 90
+
+if isSeekActive or isSpecialRoom or isShopRoom or isNearEnd then
     entityModel = false
 end
 
+-- Nếu vẫn cho spawn entity
 if entityModel then
+    -- Âm thanh xuất hiện
     local cue = Instance.new("Sound")
     cue.Parent = game.Workspace
     cue.Name = "Spawn"
@@ -27,15 +32,17 @@ if entityModel then
     cue2.PlaybackSpeed = 1
     cue2:Play()
 
-    local CameraShaker = require(game.ReplicatedStorage.CameraShaker)
-    local camara = workspace.CurrentCamera
-    local camShake = CameraShaker.new(Enum.RenderPriority.Camera.Value, function(Cf)
-        camara.CFrame = camara.CFrame * Cf
-    end)
-    camShake:Start()
-    camShake:Shake(CameraShaker.Presets.Earthquake)
+    -- Không dùng Earthquake / không rung mạnh camera
+    -- Nếu muốn camera shake nhẹ, bạn có thể tùy chỉnh:
+    -- local CameraShaker = require(game.ReplicatedStorage.CameraShaker)
+    -- local camara = workspace.CurrentCamera
+    -- local camShake = CameraShaker.new(Enum.RenderPriority.Camera.Value, function(Cf)
+    --     camara.CFrame = camara.CFrame * Cf
+    -- end)
+    -- camShake:Start()
+    -- camShake:Shake({Magnitude = 1, Roughness = 2, FadeIn = 0.1, FadeOut = 1})
 
-    -- Load Spawner
+    -- Tải Entity Spawner
     local Spawner = loadstring(game:HttpGet("https://raw.githubusercontent.com/RegularVynixu/Utilities/main/Doors/Entity%20Spawner/V1/Source.lua"))()
 
     local entity = Spawner.createEntity({
@@ -58,20 +65,16 @@ if entityModel then
             Delay = 0.5,
         },
         CamShake = {
-            Enabled = true,
-            Values = {1.5, 20, 0.1, 1},
-            Range = 100
+            Enabled = false -- Không rung camera
         },
         ResistCrucifix = false,
         BreakCrucifix = true
     })
 
+    -- Debug các sự kiện
     entity.Debug.OnEntitySpawned = function()
         print("Entity has spawned")
-        wait(0.001)
-        require(game.ReplicatedStorage.RemotesFolder.RequestAsset:InvokeServer("Earthquake"))(
-            require(game.Players.LocalPlayer.PlayerGui.MainUI.Initiator.Main_Game), workspace.CurrentRooms
-        )
+        -- Đã bỏ gọi Earthquake ở đây
     end
 
     entity.Debug.OnEntityDespawned = function()
@@ -105,11 +108,12 @@ if entityModel then
         print("Player has died")
         firesignal(game.ReplicatedStorage.RemotesFolder.DeathHint.OnClientEvent, {
             "You died to Hunger or who call Hungered",
-            "It's appear when room doing red, spawn doing asset earthquake and runs doing blood room",
-            "He can do come back few times, so hide until not safe.."
+            "It appears without red room now, but still dangerous.",
+            "He can come back a few times, so hide until it's safe."
         }, "Blue")
     end
 
+    -- Delay rồi spawn entity
     task.delay(13.856, function()
         Spawner.runEntity(entity)
         require(game.ReplicatedStorage.ClientModules.Module_Events).tryp(workspace.CurrentRooms, 100)
