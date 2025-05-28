@@ -1,0 +1,117 @@
+local entityModel = true
+
+if game.Workspace:FindFirstChild("SeekMovingNewClone")
+or game.ReplicatedStorage.GameData.LatestRoom.Value == 50
+or game.ReplicatedStorage.GameData.LatestRoom.Value == 51
+or game.ReplicatedStorage.GameData.LatestRoom.Value == 52
+or workspace.CurrentRooms[game.ReplicatedStorage.GameData.LatestRoom.Value].Assets:FindFirstChild("ShopProps")
+or game.ReplicatedStorage.GameData.LatestRoom.Value >= 90 then
+    entityModel = false
+end
+
+if entityModel then
+    local cue = Instance.new("Sound")
+    cue.Parent = game.Workspace
+    cue.Name = "Spawn"
+    cue.SoundId = "rbxassetid://9125713308"
+    cue.Volume = 9999
+    cue.PlaybackSpeed = 1
+    cue:Play()
+    wait(1)
+
+    local cue2 = Instance.new("Sound")
+    cue2.Parent = game.Workspace
+    cue2.Name = "Spawn"
+    cue2.SoundId = "rbxassetid://9125712561"
+    cue2.Volume = 9999
+    cue2.PlaybackSpeed = 1
+    cue2:Play()
+
+    local CameraShaker = require(game.ReplicatedStorage.CameraShaker)
+    local camara = workspace.CurrentCamera
+    local camShake = CameraShaker.new(Enum.RenderPriority.Camera.Value, function(Cf)
+        camara.CFrame = camara.CFrame * Cf
+    end)
+    camShake:Start()
+    camShake:Shake(CameraShaker.Presets.Earthquake)
+
+    -- Load Spawner
+    local Spawner = loadstring(game:HttpGet("https://raw.githubusercontent.com/RegularVynixu/Utilities/main/Doors/Entity%20Spawner/V1/Source.lua"))()
+
+    local entity = Spawner.createEntity({
+        CustomName = "Hunger/Hungered",
+        Model = "https://github.com/PABMAXICHAC/doors-monsters-models/blob/main/hunger.rbxm?raw=true",
+        Speed = 300,
+        MoveDelay = 2,
+        HeightOffset = 0,
+        CanKill = true,
+        KillRange = 25,
+        SpawnInFront = false,
+        ShatterLights = true,
+        FlickerLights = {
+            Enabled = true,
+            Duration = 5
+        },
+        Cycles = {
+            Min = 6,
+            Max = 12,
+            Delay = 0.5,
+        },
+        CamShake = {
+            Enabled = true,
+            Values = {1.5, 20, 0.1, 1},
+            Range = 100
+        },
+        ResistCrucifix = false,
+        BreakCrucifix = true
+    })
+
+    entity.Debug.OnEntitySpawned = function()
+        print("Entity has spawned")
+        wait(0.001)
+        require(game.ReplicatedStorage.RemotesFolder.RequestAsset:InvokeServer("Earthquake"))(
+            require(game.Players.LocalPlayer.PlayerGui.MainUI.Initiator.Main_Game), workspace.CurrentRooms
+        )
+    end
+
+    entity.Debug.OnEntityDespawned = function()
+        print("Entity has despawned")
+        local achievementGiver = loadstring(game:HttpGet("https://raw.githubusercontent.com/RegularVynixu/Utilities/main/Doors/Custom%20Achievements/Source.lua"))()
+        achievementGiver({
+            Title = "Too smart",
+            Desc = "ULTRA pro gamer",
+            Reason = "Encounter Hunger/Hungered",
+            Image = "rbxassetid://17787953833"
+        })
+    end
+
+    entity.Debug.OnEntityStartMoving = function()
+        print("Entity started moving")
+    end
+
+    entity.Debug.OnEntityFinishedRebound = function()
+        print("Entity finished rebound")
+    end
+
+    entity.Debug.OnEntityEnteredRoom = function(room)
+        print("Entity entered room:", room)
+    end
+
+    entity.Debug.OnLookAtEntity = function()
+        print("Player looking at entity")
+    end
+
+    entity.Debug.OnDeath = function()
+        print("Player has died")
+        firesignal(game.ReplicatedStorage.RemotesFolder.DeathHint.OnClientEvent, {
+            "You died to Hunger or who call Hungered",
+            "It's appear when room doing red, spawn doing asset earthquake and runs doing blood room",
+            "He can do come back few times, so hide until not safe.."
+        }, "Blue")
+    end
+
+    task.delay(13.856, function()
+        Spawner.runEntity(entity)
+        require(game.ReplicatedStorage.ClientModules.Module_Events).tryp(workspace.CurrentRooms, 100)
+    end)
+end
